@@ -14,6 +14,17 @@ import Testing
         #expect(try parseArguments(args) == .arrange(rows: rows))
     }
 
+    @Test(arguments: [
+        (["2/3"], [2, 3]),
+        (["1/1/1"], [1, 1, 1]),
+        (["2/2/2"], [2, 2, 2]),
+        (["100/100/100"], [100, 100, 100]),
+        (["1/1/3"], [1, 1, 3]),
+    ])
+    func parsesRatios(args: [String], weights: [Int]) throws {
+        #expect(try parseArguments(args) == .arrangeRatios(weights))
+    }
+
     @Test(arguments: [["-h"], ["--help"]])
     func parsesHelp(args: [String]) throws {
         #expect(try parseArguments(args) == .help)
@@ -28,8 +39,50 @@ import Testing
         #expect(throws: ArgumentError.invalidRow(value)) { try parseArguments(["2", value]) }
     }
 
+    @Test func rejectsRowSumOverflow() {
+        #expect(throws: ArgumentError.invalidRow("1")) { try parseArguments(["\(Int.max)", "1"]) }
+    }
+
     @Test func rejectsHelpMixedWithRows() {
         #expect(throws: ArgumentError.invalidRow("-h")) { try parseArguments(["2", "-h"]) }
+    }
+
+    @Test(arguments: [
+        "/",
+        "2/",
+        "/2",
+        "/2/3",
+        "2/3/",
+        "2//3",
+        "///",
+        "0/2",
+        "2/0",
+        "0/0",
+        "-1/2",
+        "2/-3",
+        "+1/2",
+        "1.5/2",
+        "a/b",
+        "2/abc",
+        " 2/3",
+        "2/3 ",
+        "2 / 3",
+        "٢/٣",
+        "99999999999999999999999/1",
+        "\(Int.max)/1",
+    ])
+    func rejectsInvalidRatio(value: String) {
+        #expect(throws: ArgumentError.invalidRatio(value)) { try parseArguments([value]) }
+    }
+
+    @Test(arguments: [
+        (["1", "2/3"], "2/3"),
+        (["2/3", "1"], "2/3"),
+        (["2/3", "1/2"], "2/3"),
+        (["2/3", "-h"], "2/3"),
+    ])
+    func rejectsRatiosWithMultipleArguments(args: [String], offending: String) {
+        #expect(throws: ArgumentError.invalidRatio(offending)) { try parseArguments(args) }
     }
 }
 
@@ -89,6 +142,43 @@ import Testing
         #expect(frames[0].maxY == frames[3].minY)
         #expect(frames[3].maxY == frames[6].minY)
         #expect(frames.allSatisfy { $0.minX.rounded() == $0.minX && $0.width.rounded() == $0.width })
+    }
+
+    @Test func splitsHorizontallyByRatio() {
+        #expect(ratioFrames(weights: [2, 3], in: area) == [
+            CGRect(x: 0, y: 25, width: 480, height: 800),
+            CGRect(x: 480, y: 25, width: 720, height: 800),
+        ])
+        #expect(ratioFrames(weights: [1, 1, 3], in: area) == [
+            CGRect(x: 0, y: 25, width: 240, height: 800),
+            CGRect(x: 240, y: 25, width: 240, height: 800),
+            CGRect(x: 480, y: 25, width: 720, height: 800),
+        ])
+    }
+
+    @Test func equalRatiosMatchSingleRowGridRegardlessOfScale() {
+        for rect in [area, CGRect(x: -1000, y: 13, width: 1001, height: 701)] {
+            let expected = gridFrames(rows: [3], in: rect)
+            #expect(ratioFrames(weights: [1, 1, 1], in: rect) == expected)
+            #expect(ratioFrames(weights: [2, 2, 2], in: rect) == expected)
+            #expect(ratioFrames(weights: [100, 100, 100], in: rect) == expected)
+        }
+    }
+
+    @Test func unevenRatioSplitsTileWithoutGapsOrOverlaps() {
+        let odd = CGRect(x: -1000, y: 13, width: 1001, height: 701)
+        let frames = ratioFrames(weights: [2, 3, 7], in: odd)
+
+        #expect(frames.count == 3)
+        #expect(frames.first!.minX == odd.minX)
+        #expect(frames.last!.maxX == odd.maxX)
+        for (left, right) in zip(frames, frames.dropFirst()) {
+            #expect(left.maxX == right.minX)
+        }
+        #expect(frames.allSatisfy {
+            $0.minY == odd.minY && $0.maxY == odd.maxY
+                && $0.minX.rounded() == $0.minX && $0.width.rounded() == $0.width
+        })
     }
 }
 

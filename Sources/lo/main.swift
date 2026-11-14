@@ -30,9 +30,15 @@ private func run(_ args: [String]) throws {
         throw LoError("\(error)\n\n\(usage)")
     }
 
-    guard case .arrange(let rows) = command else {
+    let required: Int
+    switch command {
+    case .help:
         print(usage)
         return
+    case .arrange(let rows):
+        required = rows.reduce(0, +)
+    case .arrangeRatios(let weights):
+        required = weights.count
     }
 
     try AX.ensureTrusted()
@@ -49,14 +55,24 @@ private func run(_ args: [String]) throws {
     let terminal = try Terminal()
     guard let chosen = try pickWindows(
         labels: candidates.map(\.displayName),
-        required: rows.reduce(0, +),
+        required: required,
         terminal: terminal
     ) else {
         return
     }
     let picked = chosen.map { candidates[$0] }
 
-    try arrange(picked, into: gridFrames(rows: rows, in: area))
+    let frames: [CGRect]
+    switch command {
+    case .help:
+        return
+    case .arrange(let rows):
+        frames = gridFrames(rows: rows, in: area)
+    case .arrangeRatios(let weights):
+        frames = ratioFrames(weights: weights, in: area)
+    }
+
+    try arrange(picked, into: frames)
     try raise(picked)
 }
 
