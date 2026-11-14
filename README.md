@@ -22,5 +22,3 @@ lo 2 2    # 2x2 grid
 lo 1 1    # 2 windows stacked
 lo 1 2    # 1 full-width window on top, 2 below
 ```
-
-Use `↑`/`↓` (or `k`/`j`) to move, `Enter` to mark or unmark a window, and `Esc` (or `q`) to cancel. Windows are arranged as soon as the required number is marked.

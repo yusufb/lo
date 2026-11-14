@@ -57,7 +57,7 @@ final class Terminal {
         rawModeEnabled = false
         if tcsetattr(fd, TCSAFLUSH, &original) != 0 {
             FileHandle.standardError.write(Data(
-                "lo: warning: could not restore the terminal settings (run 'reset'): \(String(cString: strerror(errno)))\n".utf8
+                "lo: error: could not restore the terminal settings (run 'reset'): \(String(cString: strerror(errno)))\n".utf8
             ))
         }
     }

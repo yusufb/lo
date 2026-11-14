@@ -51,12 +51,10 @@ struct ManagedWindow {
 }
 
 /// Resolves every candidate to an arrangeable window, keeping their order.
-/// Apps that fail to answer Accessibility queries (e.g. hung apps) are skipped,
-/// with one warning per app.
-func arrangeableWindows(_ candidates: [WindowInfo]) -> (windows: [ManagedWindow], warnings: [String]) {
+/// Apps that fail to answer Accessibility queries (e.g. hung apps) are skipped.
+func arrangeableWindows(_ candidates: [WindowInfo]) -> [ManagedWindow] {
     let resolver = WindowResolver()
     var windows: [ManagedWindow] = []
-    var warnings: [String] = []
     var failedApps: Set<pid_t> = []
 
     for candidate in candidates where !failedApps.contains(candidate.pid) {
@@ -66,10 +64,9 @@ func arrangeableWindows(_ candidates: [WindowInfo]) -> (windows: [ManagedWindow]
             }
         } catch {
             failedApps.insert(candidate.pid)
-            warnings.append("skipping '\(candidate.ownerName ?? "unknown")' (pid \(candidate.pid)): \(error)")
         }
     }
-    return (windows, warnings)
+    return windows
 }
 
 /// Matches CoreGraphics windows to Accessibility windows, querying each app at most once.

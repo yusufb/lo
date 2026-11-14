@@ -63,20 +63,6 @@ enum AX {
         return id
     }
 
-    static func position(_ element: AXUIElement) -> CGPoint? {
-        var point = CGPoint.zero
-        guard let value = axValue(element, kAXPositionAttribute),
-              AXValueGetValue(value, .cgPoint, &point) else { return nil }
-        return point
-    }
-
-    static func size(_ element: AXUIElement) -> CGSize? {
-        var size = CGSize.zero
-        guard let value = axValue(element, kAXSizeAttribute),
-              AXValueGetValue(value, .cgSize, &size) else { return nil }
-        return size
-    }
-
     static func setPosition(_ element: AXUIElement, _ point: CGPoint) -> AXError {
         var point = point
         guard let value = AXValueCreate(.cgPoint, &point) else { return .failure }
@@ -102,12 +88,5 @@ enum AX {
         default:
             return LoError("Accessibility error \(error.rawValue) while \(action)")
         }
-    }
-
-    private static func axValue(_ element: AXUIElement, _ name: String) -> AXValue? {
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success,
-              let value, CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
-        return (value as! AXValue)
     }
 }

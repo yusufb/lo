@@ -5,10 +5,6 @@ private func printError(_ message: String) {
     FileHandle.standardError.write(Data("lo: error: \(message)\n".utf8))
 }
 
-private func printWarning(_ message: String) {
-    FileHandle.standardError.write(Data("lo: warning: \(message)\n".utf8))
-}
-
 /// Visible frame (excluding the menu bar and Dock) of the screen showing `window`,
 /// in top-left origin coordinates.
 @MainActor
@@ -48,8 +44,7 @@ private func run(_ args: [String]) throws {
     }
     let area = try targetArea(for: terminalWindow.bounds)
 
-    let (candidates, resolveWarnings) = arrangeableWindows(selectCandidates(windows))
-    resolveWarnings.forEach(printWarning)
+    let candidates = arrangeableWindows(selectCandidates(windows))
 
     let terminal = try Terminal()
     guard let chosen = try pickWindows(
@@ -57,12 +52,12 @@ private func run(_ args: [String]) throws {
         required: rows.reduce(0, +),
         terminal: terminal
     ) else {
-        throw LoError("cancelled")
+        return
     }
     let picked = chosen.map { candidates[$0] }
 
-    let warnings = arrange(picked, into: gridFrames(rows: rows, in: area)) + raise(picked)
-    warnings.forEach(printWarning)
+    try arrange(picked, into: gridFrames(rows: rows, in: area))
+    try raise(picked)
 }
 
 do {
